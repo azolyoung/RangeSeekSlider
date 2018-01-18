@@ -8,6 +8,8 @@
 
 import UIKit
 
+public typealias SelectionChangedClosure = (Float, Float) -> Void
+
 @IBDesignable open class RangeSeekSlider: UIControl {
 
     // MARK: - initializers
@@ -208,6 +210,10 @@ import UIKit
             updateLabelPositions()
         }
     }
+    
+    open var enableZoomAnimationOnSelected : Bool = true
+    
+    open var onSelectionChangedClosure : SelectionChangedClosure?
 
     /// The label displayed in accessibility mode for minimum value handler. If not set, the default is empty String.
     @IBInspectable open var minLabelAccessibilityLabel: String?
@@ -459,7 +465,7 @@ import UIKit
     }
 
     private func updateLineHeight() {
-        let barSidePadding: CGFloat = 16.0
+        let barSidePadding: CGFloat = 0.0
         let yMiddle: CGFloat = frame.height / 2.0
         let lineLeftSide: CGPoint = CGPoint(x: barSidePadding, y: yMiddle)
         let lineRightSide: CGPoint = CGPoint(x: frame.width - barSidePadding,
@@ -679,9 +685,19 @@ import UIKit
         if let delegate = delegate, handleTracking != .none {
             delegate.rangeSeekSlider(self, didChange: selectedMinValue, maxValue: selectedMaxValue)
         }
+        
+        if let selectionChanged = self.onSelectionChangedClosure {
+            selectionChanged(Float(selectedMinValue), Float(selectedMaxValue))
+        }
     }
 
     private func animate(handle: CALayer, selected: Bool) {
+        if !self.enableZoomAnimationOnSelected {
+            // the label above the handle will need to move too if the handle changes size
+            updateLabelPositions()
+            return
+        }
+        
         let transform: CATransform3D
         if selected {
             transform = CATransform3DMakeScale(selectedHandleDiameterMultiplier, selectedHandleDiameterMultiplier, 1.0)
